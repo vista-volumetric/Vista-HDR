@@ -48,12 +48,15 @@ describe('Standalone & Offline Package Infrastructure', () => {
   });
 
   it('should have 1-click desktop launchers in root and dist', () => {
-    const rootBat = path.resolve(rootDir, 'Run-Vista-HDR.bat');
-    const distBat = path.resolve(distDir, 'Run-Vista-HDR.bat');
-    expect(fs.existsSync(rootBat)).toBe(true);
-    expect(fs.existsSync(distBat)).toBe(true);
+    const rootWebBat = path.resolve(rootDir, 'Launch-Vista-HDR-Web.bat');
+    const distWebBat = path.resolve(distDir, 'Launch-Vista-HDR-Web.bat');
+    const rootDesktopBat = path.resolve(rootDir, 'Launch-Vista-HDR-Desktop.bat');
 
-    const batContent = fs.readFileSync(rootBat, 'utf-8');
+    expect(fs.existsSync(rootWebBat)).toBe(true);
+    expect(fs.existsSync(distWebBat)).toBe(true);
+    expect(fs.existsSync(rootDesktopBat)).toBe(true);
+
+    const batContent = fs.readFileSync(rootWebBat, 'utf-8');
     expect(batContent).toContain('System.Net.HttpListener');
     expect(batContent).toContain('Cross-Origin-Opener-Policy');
     expect(batContent).toContain('Cross-Origin-Embedder-Policy');
@@ -65,7 +68,8 @@ describe('Standalone & Offline Package Infrastructure', () => {
 
     const readmeContent = fs.readFileSync(distReadme, 'utf-8');
     expect(readmeContent).toContain('Offline & Portable Deployment Guide');
-    expect(readmeContent).toContain('Run-Vista-HDR.bat');
+    expect(readmeContent).toContain('Launch-Vista-HDR-Web.bat');
+    expect(readmeContent).toContain('Launch-Vista-HDR-Desktop.bat');
     expect(readmeContent).toContain('standalone.html');
   });
 
@@ -75,5 +79,40 @@ describe('Standalone & Offline Package Infrastructure', () => {
 
     const stat = fs.statSync(standalonePath);
     expect(stat.size).toBeGreaterThan(500 * 1024); // Over 500 KB (fully bundled)
+  });
+
+  it('should have Launch-Vista-HDR-Web.bat supporting dedicated app mode and WebGPU flags', () => {
+    const webBat = path.resolve(rootDir, 'Launch-Vista-HDR-Web.bat');
+    expect(fs.existsSync(webBat)).toBe(true);
+
+    const content = fs.readFileSync(webBat, 'utf-8');
+    expect(content).toContain('--app=');
+    expect(content).toContain('--enable-unsafe-webgpu');
+    expect(content).toContain('Cross-Origin-Opener-Policy');
+    expect(content).toContain('Cross-Origin-Embedder-Policy');
+  });
+
+  it('should configure electron/main.cjs with WebGPU switches, clean window, and fullscreen toggle', () => {
+    const electronMain = path.resolve(rootDir, 'electron/main.cjs');
+    expect(fs.existsSync(electronMain)).toBe(true);
+
+    const mainContent = fs.readFileSync(electronMain, 'utf-8');
+    expect(mainContent).toContain("appendSwitch('enable-unsafe-webgpu')");
+    expect(mainContent).toContain("appendSwitch('enable-features', 'Vulkan,WebGPU')");
+    expect(mainContent).toContain("appendSwitch('ignore-gpu-blocklist')");
+    expect(mainContent).toContain('Vista HDR — 360° Radiometric HDR Studio');
+    expect(mainContent).toContain('Menu.setApplicationMenu(null)');
+    expect(mainContent).toContain('openExternal');
+    expect(mainContent).toContain("input.key === 'F11'");
+  });
+
+  it('should have Launch-Vista-HDR-Desktop.bat and packaged native desktop executable', () => {
+    const desktopBat = path.resolve(rootDir, 'Launch-Vista-HDR-Desktop.bat');
+    expect(fs.existsSync(desktopBat)).toBe(true);
+
+    const exePath = path.resolve(rootDir, 'release-builds/Vista HDR-win32-x64/Vista HDR.exe');
+    expect(fs.existsSync(exePath)).toBe(true);
+    const exeStat = fs.statSync(exePath);
+    expect(exeStat.size).toBeGreaterThan(50 * 1024 * 1024); // Over 50 MB native executable
   });
 });

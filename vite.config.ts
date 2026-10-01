@@ -1,8 +1,19 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
+  base: './',
   plugins: [tailwindcss()],
+  test: {
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/release-builds/**',
+      '**/.standalone-tmp/**',
+      '**/.git/**',
+    ],
+  },
   server: {
     port: 3000,
     open: false,
